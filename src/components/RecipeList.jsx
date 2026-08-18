@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey }) {
+export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey, onRecipeUpdated }) {
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editingRecipe, setEditingRecipe] = useState(null)
 
-  // Fetch all recipes from Supabase
   const fetchRecipes = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -13,18 +13,55 @@ export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching recipes:', error)
-    } else {
-      setRecipes(data || [])
-    }
+    if (error) console.error('Error fetching recipes:', error)
+    else setRecipes(data || [])
     setLoading(false)
   }
 
-  // Re-fetch recipes whenever refreshKey changes (e.g. after adding a new recipe)
   useEffect(() => {
     fetchRecipes()
   }, [refreshKey])
+
+  // Delete Recipe
+  const handleDelete = async (id, e) => {
+    e.stopPropagation()
+    if (!window.confirm('Are you sure you want to delete this recipe?')) return
+
+    const { error } = await supabase.from('recipes').delete().eq('id', id)
+    if (error) {
+      alert('Error deleting recipe: ' + error.message)
+    } else {
+      if (onRecipeUpdated) onRecipeUpdated()
+      fetchRecipes()
+    }
+  }
+
+  // Open Edit Modal
+  const handleStartEdit = (recipe, e) => {
+    e.stopPropagation()
+    setEditingRecipe({ ...recipe, ingredients: [...recipe.ingredients] })
+  }
+
+  // Save Edits
+  const handleSaveEdit = async () => {
+    if (!editingRecipe.title.trim()) return alert('Recipe title cannot be empty.')
+    
+    const { error } = await supabase
+      .from('recipes')
+      .update({
+        title: editingRecipe.title,
+        ingredients: editingRecipe.ingredients
+      })
+      .eq('id', editingRecipe.id)
+
+    if (error) {
+      alert('Error updating recipe: ' + error.message)
+    } else {
+      setEditingRecipe(null)
+      if (onRecipeUpdated) onRecipeUpdated()
+      fetchRecipes()
+    }
+  }
 
   if (loading) return <p>Loading recipes...</p>
   if (recipes.length === 0) return <p>No recipes saved yet. Add one above!</p>
@@ -32,9 +69,7 @@ export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey
   return (
     <div>
       <h2>Your Saved Recipes</h2>
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>
-        Select recipes to generate your grocery list.
-      </p>
+      <p style={{ color: '#666', fontSize: '0.9rem' }}>Select recipes to generate your grocery list.</p>
 
       <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
         {recipes.map((recipe) => {
@@ -44,22 +79,41 @@ export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey
             <div
               key={recipe.id}
               style={{
-                border: isSelected ? '2px solid #2563eb' : '1px solid #e4e4e7',
+                border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
                 background: isSelected ? '#eff6ff' : '#ffffff',
                 padding: '1rem',
-                borderRadius: '8px',
-                cursor: 'pointer'
+                borderRadius: '10px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
               onClick={() => onToggleSelect(recipe)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => {}} // Handled by parent div click
-                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                />
-                <h3 style={{ margin: 0 }}>{recipe.title}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {}}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <h3 style={{ margin: 0 }}>{recipe.title}</h3>
+                </div>
+
+                {/* Edit / Delete Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    onClick={(e) => handleStartEdit(recipe, e)}
+                    style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.3rem 0.6rem', cursor: 'pointer' }}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(recipe.id, e)}
+                    style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: '6px', padding: '0.3rem 0.6rem', cursor: 'pointer' }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
 
               <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem', color: '#374151' }}>
@@ -73,6 +127,60 @@ export default function RecipeList({ selectedRecipes, onToggleSelect, refreshKey
           )
         })}
       </div>
+
+      {/* Edit Modal Overlay */}
+      {editingRecipe && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', width: '90%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <h3>Edit Recipe</h3>
+            <input
+              type="text"
+              value={editingRecipe.title}
+              onChange={(e) => setEditingRecipe({ ...editingRecipe, title: e.target.value })}
+              style={{ width: '100%', marginBottom: '1rem', boxSizing: 'border-box' }}
+            />
+            <h4>Ingredients</h4>
+            {editingRecipe.ingredients.map((ing, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="text"
+                  value={ing.name}
+                  onChange={(e) => {
+                    const updated = [...editingRecipe.ingredients]
+                    updated[idx].name = e.target.value
+                    setEditingRecipe({ ...editingRecipe, ingredients: updated })
+                  }}
+                  style={{ flex: 2 }}
+                />
+                <input
+                  type="number"
+                  value={ing.amount}
+                  onChange={(e) => {
+                    const updated = [...editingRecipe.ingredients]
+                    updated[idx].amount = e.target.value
+                    setEditingRecipe({ ...editingRecipe, ingredients: updated })
+                  }}
+                  style={{ flex: 1 }}
+                />
+                <input
+                  type="text"
+                  value={ing.unit}
+                  onChange={(e) => {
+                    const updated = [...editingRecipe.ingredients]
+                    updated[idx].unit = e.target.value
+                    setEditingRecipe({ ...editingRecipe, ingredients: updated })
+                  }}
+                  style={{ flex: 1 }}
+                />
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
+              <button className="btn-secondary" onClick={() => setEditingRecipe(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

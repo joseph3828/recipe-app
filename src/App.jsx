@@ -15,7 +15,7 @@ export default function App() {
     }
   }
 
-  const handleRecipeAdded = () => {
+  const handleRecipeAddedOrUpdated = () => {
     setRefreshKey((prev) => prev + 1)
   }
 
@@ -27,7 +27,7 @@ export default function App() {
       </div>
       
       <div className="card">
-        <AddRecipe onRecipeAdded={handleRecipeAdded} />
+        <AddRecipe onRecipeAdded={handleRecipeAddedOrUpdated} />
       </div>
       
       <div className="card">
@@ -35,6 +35,7 @@ export default function App() {
           selectedRecipes={selectedRecipes}
           onToggleSelect={handleToggleSelect}
           refreshKey={refreshKey}
+          onRecipeUpdated={handleRecipeAddedOrUpdated}
         />
       </div>
 
