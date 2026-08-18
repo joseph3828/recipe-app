@@ -60,33 +60,32 @@ export default function AddRecipe({ onRecipeAdded, user }) {
             placeholder="e.g., Pancakes"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', boxSizing: 'border-box' }}
           />
         </div>
 
         <h3>Ingredients</h3>
         {ingredients.map((ing, index) => (
-          <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+          <div key={index} className="ingredient-row">
             <input
               type="text"
               placeholder="Item (e.g., Flour)"
               value={ing.name}
               onChange={(e) => handleIngredientChange(index, 'name', e.target.value)}
-              style={{ flex: '2' }}
+              style={{ flex: '2', minWidth: 0 }}
             />
             <input
               type="number"
               placeholder="Qty (e.g., 2)"
               value={ing.amount}
               onChange={(e) => handleIngredientChange(index, 'amount', e.target.value)}
-              style={{ flex: '1' }}
+              style={{ flex: '1', minWidth: 0 }}
             />
             <input
               type="text"
               placeholder="Unit (e.g., cups)"
               value={ing.unit}
               onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
-              style={{ flex: '1' }}
+              style={{ flex: '1', minWidth: 0 }}
             />
             {ingredients.length > 1 && (
               <button
