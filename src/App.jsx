@@ -20,16 +20,23 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '2rem auto', fontFamily: 'sans-serif', padding: '0 1rem' }}>
-      <h1>Recipe Saver & Shopping List</h1>
+    <div className="app-container">
+      <div className="header">
+        <h1>🍳 Recipe & Grocery Planner</h1>
+        <p>Save recipes, select meals for the week, and auto-generate your consolidated grocery list.</p>
+      </div>
       
-      <AddRecipe onRecipeAdded={handleRecipeAdded} />
+      <div className="card">
+        <AddRecipe onRecipeAdded={handleRecipeAdded} />
+      </div>
       
-      <RecipeList
-        selectedRecipes={selectedRecipes}
-        onToggleSelect={handleToggleSelect}
-        refreshKey={refreshKey}
-      />
+      <div className="card">
+        <RecipeList
+          selectedRecipes={selectedRecipes}
+          onToggleSelect={handleToggleSelect}
+          refreshKey={refreshKey}
+        />
+      </div>
 
       <ShoppingList selectedRecipes={selectedRecipes} />
     </div>
