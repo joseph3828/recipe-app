@@ -33,6 +33,7 @@ export default function App() {
       <div className="card">
         <RecipeList
           selectedRecipes={selectedRecipes}
+          setSelectedRecipes={setSelectedRecipes}
           onToggleSelect={handleToggleSelect}
           refreshKey={refreshKey}
           onRecipeUpdated={handleRecipeAddedOrUpdated}

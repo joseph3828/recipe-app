@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 
 export default function ShoppingList({ selectedRecipes }) {
   const [shoppingList, setShoppingList] = useState([])
+  const [multiplier, setMultiplier] = useState(1)
   const [showFloatingPopup, setShowFloatingPopup] = useState(false)
   const listRef = useRef(null)
 
-  const consolidateIngredients = (recipes) => {
+  const consolidateIngredients = (recipes, batchMultiplier) => {
     const totals = {}
     recipes.forEach((recipe) => {
       recipe.ingredients.forEach(({ name, amount, unit }) => {
@@ -13,7 +14,7 @@ export default function ShoppingList({ selectedRecipes }) {
         const cleanName = name.trim().toLowerCase()
         const cleanUnit = (unit || '').trim().toLowerCase()
         const key = `${cleanName}_${cleanUnit}`
-        const parsedAmount = parseFloat(amount) || 0
+        const parsedAmount = (parseFloat(amount) || 0) * batchMultiplier
 
         if (totals[key]) {
           totals[key].amount += parsedAmount
@@ -31,10 +32,9 @@ export default function ShoppingList({ selectedRecipes }) {
   }
 
   useEffect(() => {
-    setShoppingList(consolidateIngredients(selectedRecipes))
-  }, [selectedRecipes])
+    setShoppingList(consolidateIngredients(selectedRecipes, multiplier))
+  }, [selectedRecipes, multiplier])
 
-  // Hide floating popup when full shopping list component is visible in viewport
   useEffect(() => {
     if (selectedRecipes.length === 0) {
       setShowFloatingPopup(false)
@@ -58,13 +58,21 @@ export default function ShoppingList({ selectedRecipes }) {
     setShoppingList(updated)
   }
 
+  const copyToClipboard = () => {
+    const formatted = shoppingList
+      .map((item) => `[${item.isChecked ? 'x' : ' '}] ${item.amount > 0 ? item.amount : ''} ${item.unit} ${item.name}`)
+      .join('\n')
+
+    navigator.clipboard.writeText(`🛒 Shopping List (${multiplier}x Servings):\n\n${formatted}`)
+    alert('Copied grocery list to clipboard!')
+  }
+
   const scrollToShoppingList = () => {
     listRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
     <>
-      {/* Floating Sticky Popup Bar */}
       {showFloatingPopup && (
         <div
           onClick={scrollToShoppingList}
@@ -96,7 +104,6 @@ export default function ShoppingList({ selectedRecipes }) {
         </div>
       )}
 
-      {/* Main Shopping List Section */}
       <div
         ref={listRef}
         style={{
@@ -104,13 +111,45 @@ export default function ShoppingList({ selectedRecipes }) {
           padding: '1.5rem',
           background: selectedRecipes.length > 0 ? '#f0fdf4' : '#f8fafc',
           border: selectedRecipes.length > 0 ? '1px solid #bbf7d0' : '1px dashed #cbd5e1',
-          borderRadius: '12px',
-          transition: 'all 0.3s ease'
+          borderRadius: '12px'
         }}
       >
-        <h2>Shopping List</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <h2 style={{ margin: 0 }}>Shopping List</h2>
+
+          {selectedRecipes.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {/* Batch Cook Servings Multiplier */}
+              <div style={{ display: 'flex', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden' }}>
+                {[1, 2, 3].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMultiplier(m)}
+                    style={{
+                      background: multiplier === m ? '#2563eb' : '#ffffff',
+                      color: multiplier === m ? '#ffffff' : '#334155',
+                      border: 'none',
+                      padding: '0.35rem 0.65rem',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    {m}x
+                  </button>
+                ))}
+              </div>
+
+              {/* Copy Button */}
+              <button className="btn-secondary" onClick={copyToClipboard} style={{ fontSize: '0.85rem' }}>
+                📋 Copy List
+              </button>
+            </div>
+          )}
+        </div>
+
         {selectedRecipes.length === 0 ? (
-          <p style={{ color: '#64748b' }}>Select one or more recipes above to generate your consolidated grocery list.</p>
+          <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Select one or more recipes above to generate your consolidated grocery list.</p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem' }}>
             {shoppingList.map((item, idx) => (
