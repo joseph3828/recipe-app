@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-export default function AddRecipe({ onRecipeAdded }) {
+export default function AddRecipe({ onRecipeAdded, user }) {
   const [title, setTitle] = useState('')
   const [ingredients, setIngredients] = useState([
     { name: '', amount: '', unit: '' }
@@ -12,9 +12,8 @@ export default function AddRecipe({ onRecipeAdded }) {
     setIngredients([...ingredients, { name: '', amount: '', unit: '' }])
   }
 
-  // Delete a specific ingredient row
   const handleRemoveIngredient = (index) => {
-    if (ingredients.length === 1) return // Keep at least one row
+    if (ingredients.length === 1) return
     setIngredients(ingredients.filter((_, i) => i !== index))
   }
 
@@ -35,7 +34,7 @@ export default function AddRecipe({ onRecipeAdded }) {
 
     setLoading(true)
     const { error } = await supabase.from('recipes').insert([
-      { title, ingredients: validIngredients }
+      { title, ingredients: validIngredients, user_id: user.id }
     ])
     setLoading(false)
 
@@ -102,7 +101,6 @@ export default function AddRecipe({ onRecipeAdded }) {
                   cursor: 'pointer',
                   fontWeight: 'bold'
                 }}
-                title="Remove ingredient"
               >
                 ✕
               </button>
